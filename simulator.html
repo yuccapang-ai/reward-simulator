@@ -1,0 +1,486 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>特殊奖励日配额模拟器</title>
+    <style>
+        :root {
+            --primary: #4f8cff;
+            --primary-light: #e6f0ff;
+            --accent: #ffb347;
+            --bg: #f5f7fb;
+            --card-bg: #ffffff;
+            --text-main: #222;
+            --text-sub: #666;
+            --border-color: #e0e3eb;
+        }
+        * { box-sizing: border-box; }
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Microsoft YaHei", sans-serif;
+            background: var(--bg);
+            color: var(--text-main);
+        }
+        .page {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 24px 16px 40px;
+        }
+        .header {
+            display: flex;
+            align-items: baseline;
+            justify-content: space-between;
+            margin-bottom: 16px;
+        }
+        .title {
+            font-size: 22px;
+            font-weight: 600;
+            color: #1f2933;
+        }
+        .subtitle {
+            font-size: 12px;
+            color: var(--text-sub);
+            margin-top: 4px;
+        }
+        .card {
+            background: var(--card-bg);
+            border-radius: 10px;
+            box-shadow: 0 4px 12px rgba(15, 23, 42, 0.06);
+            padding: 16px 18px 18px;
+            margin-bottom: 16px;
+            border: 1px solid #eef0f7;
+        }
+        .card-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 10px;
+        }
+        .card-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: #1f2933;
+        }
+        .card-desc {
+            font-size: 12px;
+            color: var(--text-sub);
+        }
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(260px, 1fr));
+            gap: 8px 24px;
+            margin-top: 8px;
+        }
+        .form-item {
+            display: flex;
+            flex-direction: column;
+            font-size: 13px;
+        }
+        .form-item label {
+            margin-bottom: 4px;
+            color: #4a5563;
+        }
+        .form-item small {
+            color: var(--text-sub);
+            font-size: 11px;
+        }
+        .form-item input {
+            margin-top: 2px;
+            padding: 6px 8px;
+            border-radius: 6px;
+            border: 1px solid var(--border-color);
+            font-size: 13px;
+            outline: none;
+            transition: border-color 0.15s, box-shadow 0.15s, background 0.15s;
+            background: #f9fafc;
+        }
+        .form-item input:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 2px rgba(79, 140, 255, 0.12);
+            background: #ffffff;
+        }
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 8px 18px;
+            border-radius: 999px;
+            border: none;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: 500;
+            color: #ffffff;
+            background: linear-gradient(135deg, #4f8cff, #3a6ce6);
+            box-shadow: 0 6px 12px rgba(79, 140, 255, 0.3);
+            margin-top: 10px;
+        }
+        .btn:hover {
+            background: linear-gradient(135deg, #427df0, #345fd0);
+        }
+        .btn:active {
+            transform: translateY(1px);
+            box-shadow: 0 3px 6px rgba(79, 140, 255, 0.3);
+        }
+        .summary {
+            font-size: 13px;
+            color: #111827;
+        }
+        .summary span { margin-right: 16px; }
+        .summary b { color: var(--primary); }
+        table {
+            border-collapse: collapse;
+            width: 100%;
+            margin-top: 8px;
+            font-size: 12px;
+        }
+        th, td {
+            border: 1px solid var(--border-color);
+            padding: 5px 6px;
+            text-align: right;
+        }
+        th {
+            background-color: #f9fafc;
+            font-weight: 600;
+            color: #4b5563;
+        }
+        td:first-child, th:first-child { text-align: left; }
+        .highlight { background-color: #fff7e0; }
+        #chart-container { margin-top: 4px; }
+        #chart {
+            border-radius: 8px;
+            border: 1px solid #e1e4f0;
+            background: radial-gradient(circle at top left, #f7fbff, #f5f7fb);
+        }
+        .hint {
+            font-size: 11px;
+            color: var(--text-sub);
+            margin-top: 4px;
+        }
+        @media (max-width: 800px) {
+            .form-grid { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+<div class="page">
+    <div class="header">
+        <div>
+            <div class="title">特殊奖励日配额模拟器</div>
+            <div class="subtitle">均匀投放 + 自定义高峰时段 + 日配额兜底（每段样本数 = 86400000 / 段数）</div>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-header">
+            <div class="card-title">参数配置</div>
+            <div class="card-desc">调整参数后点击「开始模拟」，下方会刷新表格和图表</div>
+        </div>
+        <div class="form-grid">
+            <div class="form-item">
+                <label for="N_target">每日目标发放总量 N_target</label>
+                <input id="N_target" type="number" value="1000">
+                <small>一天计划发出的特殊奖励总数，例如 1000</small>
+            </div>
+            <div class="form-item">
+                <label for="hours_total">每日日内划分段数 hours_total</label>
+                <input id="hours_total" type="number" value="24">
+                <small>例如 24（每段≈1小时）、48（每段≈30分钟）、96（每段≈15分钟）</small>
+            </div>
+            <div class="form-item">
+                <label for="peak_start">高峰起始段序号（1-based）</label>
+                <input id="peak_start" type="number" value="21">
+                <small>例如 21 表示从第21段开始为高峰</small>
+            </div>
+            <div class="form-item">
+                <label for="peak_end">高峰结束段序号（1-based，含）</label>
+                <input id="peak_end" type="number" value="24">
+                <small>必须 ≥ 起始序号，且 ≤ hours_total</small>
+            </div>
+            <div class="form-item">
+                <label for="peak_weight">高峰段权重倍数</label>
+                <input id="peak_weight" type="number" step="0.1" value="2.0">
+                <small>高峰段的目标占比是普通段的多少倍，例如 2.0 = 两倍</small>
+            </div>
+            <div class="form-item">
+                <label for="base_p">基础概率 base_p</label>
+                <input id="base_p" type="number" step="0.000001" value="0.00005">
+                <small>不考虑进度纠偏时的单次基础触发概率，用来大致控制整体出率</small>
+            </div>
+            <div class="form-item">
+                <label for="k">纠偏强度 k</label>
+                <input id="k" type="number" step="0.1" value="3.0">
+                <small>越大越紧追目标曲线，波动更明显；2～4 一般比较合适</small>
+            </div>
+            <div class="form-item">
+                <label for="seed">随机种子</label>
+                <input id="seed" type="number" value="20250119">
+                <small>相同种子对应相同结果，方便复现</small>
+            </div>
+        </div>
+
+        <button class="btn" onclick="runSimulation()">开始模拟</button>
+        <div class="hint">
+            说明：模拟按「hours_total 段」统计。每段样本数自动设为 86400000 / 段数，用于近似真实判定次数。逻辑为「按段目标 → 进度纠偏 → 最后1段兜底」。
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-header">
+            <div class="card-title">模拟结果</div>
+        </div>
+        <div id="summary" class="summary"></div>
+        <div id="chart-container">
+            <canvas id="chart" width="900" height="320"></canvas>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-header">
+            <div class="card-title">详细数据（按段序号）</div>
+            <div class="card-desc">高峰段将以浅黄色标记</div>
+        </div>
+        <div id="table-container"></div>
+    </div>
+</div>
+
+<script>
+    function runSimulation() {
+        const N_target = parseInt(document.getElementById('N_target').value, 10);
+        const hours_total = parseInt(document.getElementById('hours_total').value, 10);
+        const peak_start = parseInt(document.getElementById('peak_start').value, 10);
+        const peak_end = parseInt(document.getElementById('peak_end').value, 10);
+        const peak_weight = parseFloat(document.getElementById('peak_weight').value);
+        const base_p = parseFloat(document.getElementById('base_p').value);
+        const k = parseFloat(document.getElementById('k').value);
+        const seed = parseInt(document.getElementById('seed').value, 10);
+
+        if (!N_target || N_target <= 0) { alert("N_target 需要是大于0的数字"); return; }
+        if (!hours_total || hours_total <= 0) { alert("hours_total 需要是大于0的数字"); return; }
+        if (!peak_start || !peak_end || peak_start < 1 || peak_end < peak_start || peak_end > hours_total) {
+            alert("高峰起止序号不合法，请检查 peak_start / peak_end（1-based，且 peak_start ≤ peak_end ≤ hours_total）");
+            return;
+        }
+        if (!peak_weight || peak_weight <= 0) { alert("peak_weight 需要是大于0的数字"); return; }
+
+        const p_min = 0.0000001;
+        const p_max = 0.05;
+
+        // 每段样本数 = 86400000 / 段数
+        const samples_per_hour = Math.floor(86400000 / hours_total);
+
+        // 简单随机数实现（可复现）
+        let rndSeed = seed || 1;
+        function random() {
+            rndSeed = (rndSeed * 9301 + 49297) % 233280;
+            return rndSeed / 233280.0;
+        }
+
+        // 1. 每段权重（普通段=1，高峰段=peak_weight）
+        const rawWeights = [];
+        for (let h = 0; h < hours_total; h++) {
+            const index1 = h + 1; // 1-based
+            if (index1 >= peak_start && index1 <= peak_end) {
+                rawWeights.push(peak_weight);
+            } else {
+                rawWeights.push(1.0);
+            }
+        }
+        const sumRaw = rawWeights.reduce((a, b) => a + b, 0);
+        const hourTargets = rawWeights.map(w => N_target * (w / sumRaw));
+
+        // 2. 模拟发放
+        let N_left = N_target;
+        const hitsPerHour = new Array(hours_total).fill(0);
+
+        for (let h = 0; h < hours_total; h++) {
+            if (N_left <= 0) break;
+
+            // 累计目标进度
+            let target_cumulative = 0;
+            for (let j = 0; j < h; j++) target_cumulative += hourTargets[j];
+
+            const delivered = N_target - N_left;
+            const progress_target = target_cumulative / N_target;
+            const progress_reward = delivered / N_target;
+            const diff = progress_target - progress_reward; // >0 表示发少了
+
+            let p;
+            if (h === hours_total - 1) {
+                // 最后1段兜底：期望发完剩余
+                p = N_left / Math.max(samples_per_hour, 1);
+            } else {
+                p = base_p * (1 + k * diff);
+            }
+            if (p < p_min) p = p_min;
+            if (p > p_max) p = p_max;
+
+            let hits = 0;
+            for (let s = 0; s < samples_per_hour; s++) {
+                if (N_left <= 0) break;
+                if (random() < p) {
+                    hits++;
+                    N_left--;
+                }
+            }
+            hitsPerHour[h] = hits;
+        }
+
+        const totalHits = N_target - N_left;
+
+        // 3. 文本 summary
+        const summaryDiv = document.getElementById('summary');
+        const avgPer = (N_target / hours_total).toFixed(1);
+        summaryDiv.innerHTML =
+            `<span>目标发出数量：<b>${N_target}</b></span>` +
+            `<span>实际发出数量：<b>${totalHits}</b></span>` +
+            `<span>剩余未发数量：<b>${N_left}</b></span>` +
+            `<span>分段数：<b>${hours_total}</b></span>` +
+            `<span>每段平均期望：<b>${avgPer}</b></span>` +
+            `<span>每段样本数：<b>${samples_per_hour}</b></span>` +
+            `<span>高峰段：<b>${peak_start} - ${peak_end}</b>，权重倍数：<b>${peak_weight}</b></span>`;
+
+        // 4. 表格
+        const tableDiv = document.getElementById('table-container');
+        let html = '<table><thead><tr>' +
+            '<th>序号</th><th>目标发放</th><th>实际发放</th></tr></thead><tbody>';
+
+        for (let h = 0; h < hours_total; h++) {
+            const target = hourTargets[h];
+            const hits = hitsPerHour[h];
+            const index1 = h + 1;
+            const isPeak = (index1 >= peak_start && index1 <= peak_end);
+            html += `<tr ${isPeak ? 'class="highlight"' : ''}>` +
+                `<td>${index1}</td>` +
+                `<td>${target.toFixed(1)}</td>` +
+                `<td>${hits}</td>` +
+                `</tr>`;
+        }
+
+        html += '</tbody></table>';
+        tableDiv.innerHTML = html;
+
+        // 5. 图表：横轴用段序号0~n-1
+        drawChart(hourTargets, hitsPerHour);
+    }
+
+    function drawChart(hourTargets, hitsPerHour) {
+        const canvas = document.getElementById('chart');
+        const ctx = canvas.getContext('2d');
+
+        const width = canvas.width;
+        const height = canvas.height;
+        ctx.clearRect(0, 0, width, height);
+
+        const n = hourTargets.length;
+        const paddingLeft = 40;
+        const paddingRight = 20;
+        const paddingTop = 20;
+        const paddingBottom = 30;
+
+        const chartWidth = width - paddingLeft - paddingRight;
+        const chartHeight = height - paddingTop - paddingBottom;
+
+        // 计算最大值
+        let maxVal = 0;
+        for (let i = 0; i < n; i++) {
+            if (hourTargets[i] > maxVal) maxVal = hourTargets[i];
+            if (hitsPerHour[i] > maxVal) maxVal = hitsPerHour[i];
+        }
+        if (maxVal < 1) maxVal = 1;
+
+        function xPos(i) {
+            return paddingLeft + (chartWidth / n) * (i + 0.5);
+        }
+        function yPos(val) {
+            return paddingTop + chartHeight * (1 - val / maxVal);
+        }
+
+        // 坐标轴
+        ctx.strokeStyle = "#cbd2e5";
+        ctx.lineWidth = 1;
+
+        // y轴
+        ctx.beginPath();
+        ctx.moveTo(paddingLeft, paddingTop);
+        ctx.lineTo(paddingLeft, paddingTop + chartHeight);
+        ctx.stroke();
+
+        // x轴
+        ctx.beginPath();
+        ctx.moveTo(paddingLeft, paddingTop + chartHeight);
+        ctx.lineTo(paddingLeft + chartWidth, paddingTop + chartHeight);
+        ctx.stroke();
+
+        // y轴刻度
+        ctx.fillStyle = "#6b7280";
+        ctx.font = "11px Arial";
+        const steps = 4;
+        for (let i = 0; i <= steps; i++) {
+            const val = (maxVal / steps) * i;
+            const y = yPos(val);
+            ctx.fillText(Math.round(val), 4, y + 4);
+            ctx.strokeStyle = "#edf1fb";
+            ctx.beginPath();
+            ctx.moveTo(paddingLeft, y);
+            ctx.lineTo(paddingLeft + chartWidth, y);
+            ctx.stroke();
+        }
+
+        // x轴刻度（段序号）
+        ctx.fillStyle = "#6b7280";
+        for (let i = 0; i < n; i++) {
+            const x = xPos(i);
+            const label = i.toString();
+            ctx.save();
+            ctx.translate(x, paddingTop + chartHeight + 14);
+            ctx.rotate(-Math.PI / 6);
+            ctx.fillText(label, -6, 0);
+            ctx.restore();
+        }
+
+        // 实际发放（柱状）
+        const barWidth = (chartWidth / n) * 0.55;
+        for (let i = 0; i < n; i++) {
+            const xCenter = xPos(i);
+            const val = hitsPerHour[i];
+            const y = yPos(val);
+            ctx.fillStyle = "#ffb347";
+            ctx.fillRect(
+                xCenter - barWidth / 2,
+                y,
+                barWidth,
+                paddingTop + chartHeight - y
+            );
+        }
+
+        // 目标发放（折线）
+        ctx.strokeStyle = "#4f8cff";
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        for (let i = 0; i < n; i++) {
+            const x = xPos(i);
+            const y = yPos(hourTargets[i]);
+            if (i === 0) ctx.moveTo(x, y);
+            else ctx.lineTo(x, y);
+        }
+        ctx.stroke();
+
+        // 折线节点
+        ctx.fillStyle = "#4f8cff";
+        for (let i = 0; i < n; i++) {
+            const x = xPos(i);
+            const y = yPos(hourTargets[i]);
+            ctx.beginPath();
+            ctx.arc(x, y, 3, 0, Math.PI * 2);
+            ctx.fill();
+        }
+
+        // 图例
+        ctx.fillStyle = "#374151";
+        ctx.font = "11px Arial";
+        ctx.fillText("橙色柱：实际发放  蓝色线：目标发放（横轴为日内段序号 0～N-1）", 48, paddingTop - 6);
+    }
+</script>
+</body>
+</html>
