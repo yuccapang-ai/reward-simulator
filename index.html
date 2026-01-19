@@ -199,12 +199,12 @@
             </div>
             <div class="form-item">
                 <label for="peak_weight">高峰段权重倍数</label>
-                <input id="peak_weight" type="number" step="0.1" value="2.0">
+                <input id="peak_weight" type="number" step="0.1" value="1.0">
                 <small>高峰段的目标占比是普通段的多少倍，例如 2.0 = 两倍</small>
             </div>
             <div class="form-item">
                 <label for="base_p">基础概率 base_p</label>
-                <input id="base_p" type="number" step="0.000001" value="0.00005">
+                <input id="base_p" type="number" step="0.000001" value="0.000012">
                 <small>不考虑进度纠偏时的单次基础触发概率，用来大致控制整体出率</small>
             </div>
             <div class="form-item">
@@ -214,7 +214,7 @@
             </div>
             <div class="form-item">
                 <label for="seed">随机种子</label>
-                <input id="seed" type="number" value="20250119">
+                <input id="seed" type="number" value="20260119">
                 <small>相同种子对应相同结果，方便复现</small>
             </div>
         </div>
@@ -263,7 +263,7 @@
         }
         if (!peak_weight || peak_weight <= 0) { alert("peak_weight 需要是大于0的数字"); return; }
 
-        const p_min = 0.0000001;
+        const p_min = 0.000005;
         const p_max = 0.05;
 
         // 每段样本数 = 86400000 / 段数
@@ -484,3 +484,4 @@
 </script>
 </body>
 </html>
+
