@@ -295,7 +295,7 @@
 
         for (let h = 0; h < hours_total; h++) {
             if (N_left <= 0) break;
-
+            /*
             // 累计目标进度
             let target_cumulative = 0;
             for (let j = 0; j < h; j++) target_cumulative += hourTargets[j];
@@ -304,6 +304,15 @@
             const progress_target = target_cumulative / N_target;
             const progress_reward = delivered / N_target;
             const diff = progress_target - progress_reward; // >0 表示发少了
+            */
+            // 按时间算目标进度
+            const delivered = N_target - N_left;
+            // 时间进度：当前段开始时，已经过去的时间占比
+            const progress_time = h / hours_total;             // 0 ～ 1
+            // 实际发奖进度：已发数量占比
+            const progress_reward = delivered / N_target;      // 0 ～ 1
+            // 偏差：时间进度 - 实际进度
+            const diff = progress_time - progress_reward;      // >0 表示发少了
 
             let p;
             if (h === hours_total - 1) {
@@ -484,4 +493,5 @@
 </script>
 </body>
 </html>
+
 
